@@ -41,18 +41,18 @@ class TestTaskApplicationTests {
     fun initConsumerGroup() {
         System.setProperty("kafka.bootstrap.servers", kafkaContainer.bootstrapServers)
 
-        val adminClient = createAdminClient()
+        val adminClient = kafkaContainer.createAdminClient()
         //Init test topic
         adminClient.createTopics(mutableListOf(NewTopic(topicName, 3, 1))).all().get()
 
-        val producer = createProducer()
+        val producer = kafkaContainer.createProducer()
         //Send 5 record in 1 partition
         repeat(5) {
-            producer.send(ProducerRecord(topicName, 1, "ket", "value"))
+            producer.send(ProducerRecord(topicName, 1, "key", "value"))
         }
 
         //await consumer group to get partitions from kafka and poll one record
-        val consumer = createConsumer()
+        val consumer = kafkaContainer.createConsumer(consumerGroupId)
         consumer.subscribe(listOf(topicName))
         while (consumer.poll(Duration.ZERO).isEmpty) {
         }
@@ -60,7 +60,7 @@ class TestTaskApplicationTests {
     }
 
     @Test
-    fun contextLoads() {
+    fun getConsumerGroupLag() {
         mockMvc.perform(
             MockMvcRequestBuilders
                 .get("/consumer-groups/lag/$consumerGroupId")
@@ -72,36 +72,5 @@ class TestTaskApplicationTests {
                     "testTopic-2" to 0,
                 ).toJson()
             ))
-    }
-
-    private fun createAdminClient(): AdminClient {
-        val adminProps = Properties()
-        adminProps[AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaContainer.bootstrapServers
-        return AdminClient.create(adminProps)
-    }
-
-    private fun createProducer(): KafkaProducer<String, String> {
-        val producerProps = Properties()
-        producerProps[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaContainer.bootstrapServers
-        producerProps[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = Serdes.String().serializer().javaClass
-        producerProps[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = Serdes.String().serializer().javaClass
-        return KafkaProducer<String, String>(producerProps)
-    }
-
-    private fun createConsumer(): KafkaConsumer<String, String> {
-        val consumerProps = Properties()
-        consumerProps[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaContainer.bootstrapServers
-        consumerProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = Serdes.String().deserializer().javaClass
-        consumerProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = Serdes.String().deserializer().javaClass
-        consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = consumerGroupId
-        consumerProps[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] = 1
-        consumerProps[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest"
-        return KafkaConsumer<String, String>(consumerProps)
-    }
-
-    companion object {
-        private val mapper = jacksonObjectMapper()
-
-        fun Any.toJson(): String = mapper.writeValueAsString(this)
     }
 }
