@@ -5,3 +5,5 @@ Expectations:
 * good spring components structure
 * clean and well formatted code
 * maybe some corner case tests
+
+Hint! To get bootstrap server use `System.getProperty("kafka.bootstrap.servers")`
