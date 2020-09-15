@@ -14,8 +14,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.time.Duration
 
-//TODO add your controller here
-@WebMvcTest(controllers = [])
+@WebMvcTest
 @Testcontainers
 class TestTaskApplicationTests {
 
@@ -45,7 +44,7 @@ class TestTaskApplicationTests {
         //await consumer group to get partitions from kafka and poll one record
         val consumer = kafkaContainer.createConsumer(consumerGroupId)
         consumer.subscribe(listOf(topicName))
-        while (consumer.poll(Duration.ZERO).isEmpty) {
+        while (consumer.poll(Duration.ofMinutes(5)).isEmpty) {
         }
         consumer.commitSync()
     }
